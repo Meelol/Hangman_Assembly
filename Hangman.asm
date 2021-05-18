@@ -42,6 +42,7 @@
         wordMessage: .asciiz "Word: "
         missedMessage: .asciiz "Missed: "
         invalidInputMessage: .asciiz "Invalid input\n"
+        blankSpace: .asciiz " "
         newLine: .asciiz "\n"
         
         hangmanDrawing_6Lives: .asciiz "\n |-----|\n |     |\n       |\n       |\n       |\n       |\n       |\n       |\n ---------\n"
@@ -84,11 +85,27 @@
         	#Find length of word
         	lw	$a0, selectedWord
         	jal	findWordLength
-        	move	$t1, $v1
+        	move	$s2, $v1		#$t1 = selectedWord.length()
+        	
+        	
+        	li	$t0, 0			#For loop counter set to 0
+        	appedUnderScoreLoop:
+        	addi	$t0, $t0, 1
+        	##### Implement .append() function from C++ file
+        	
+        	
+        	
+        	
+        	
+        	
+        	
+        	########################################
+        	ble	$t0, $s2, appendUnderScoreLoop
+        	
         	
         	#Print length
               	li	$v0, 1
-        	move	$a0, $t1
+        	move	$a0, $s2
         	syscall
         	 
         	#Return to main
