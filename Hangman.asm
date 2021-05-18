@@ -67,15 +67,15 @@
 		
 	startGame:
 		addi	$sp, $sp, -4
-		sw	$s0, 0($sp)
+		sw	$ra, 0($sp)
 		#Generate random number 0 - 19
 		li	$v0, 42
 		la	$a1, 20
 		syscall
-        	move	$s1, $a0		#$s1 = Random number
-        	mul	$t0, $s1, 4		#Get correct wordList member
-        	lw	$s2, wordList($t0)	#$s2 = wordList[$s0]	
-        	sw	$s2, selectedWord 	#selectedWord = $s2
+        	move	$s0, $a0		#$s0 = Random number
+        	mul	$t0, $s0, 4		#Get correct wordList member
+        	lw	$s1, wordList($t0)	#$s1 = wordList[$s0]	
+        	sw	$s1, selectedWord 	#selectedWord = $s1
         	#Print selectedWord to check
         	li    	$v0,  4
         	lw	$a0, selectedWord
@@ -84,7 +84,7 @@
         	#Find length of word
         	lw	$a0, selectedWord
         	jal	findWordLength
-        	move	$t1, $v0
+        	move	$t1, $v1
         	
         	#Print length
               	li	$v0, 1
@@ -92,7 +92,7 @@
         	syscall
         	 
         	#Return to main
-        	lw	$s0, 0($sp)
+        	lw	$ra, 0($sp)
         	addi	$sp, $sp, 4
         	jr	$ra
         	
@@ -105,6 +105,7 @@
 		addi $t0, $t0, 1 	#increment the count
 		j loop 			#return to the top of the loop
 		exit:
+		move	$v1, $t0
 		jr $ra
                 
                 
