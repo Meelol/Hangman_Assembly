@@ -85,44 +85,44 @@
         	#Find length of word
         	lw	$a0, selectedWord
         	jal	findWordLength
-        	move	$s2, $v1		#$t1 = selectedWord.length()
-        	
-        	
-        	li	$t0, 0			#For loop counter set to 0
-        	appedUnderScoreLoop:
-        	addi	$t0, $t0, 1
-        	##### Implement .append() function from C++ file
-        	
-        	
-        	
-        	
-        	
-        	
-        	
-        	########################################
-        	ble	$t0, $s2, appendUnderScoreLoop
-        	
-        	
+        	move	$s2, $v1		#$s2 = selectedWord.length()
         	#Print length
               	li	$v0, 1
         	move	$a0, $s2
         	syscall
-        	 
+        	#Append underscores to correctWord depending on the number of letters in selectedWord
+        	li	$t0, 0			#For loop counter set to 0
+        	la	$t1, correctWord
+        	la	$t2, underscore
+        	appendUnderScoreLoop:
+        	addi	$t0, $t0, 1		#Incerease counter by 1
+        	lb	$t3, 0($t2)		#Load underscore "_" to $t3
+        	sb	$t3, 0($t1)		#Add underscore to correctWord
+        	addi	$t1, $t1, 1		#Go to next memory location in correctWord
+        	blt	$t0, $s2, appendUnderScoreLoop	#Keep looping until counter matches the length of selectedWord
+        	
+        	#Print correctWord to check the number of underscores
+        	li	$v0, 4
+        	la	$a0, correctWord
+        	syscall
+        	
         	#Return to main
         	lw	$ra, 0($sp)
         	addi	$sp, $sp, 4
         	jr	$ra
-        	
+        
+        							
+        								
         findWordLength:
-      		li $t0, 0 		#initialize the count to zero
-		loop:
-		lb $t1, 0($a0) 		#load the next character into t1
-		beqz $t1, exit 		#check for the null character
-		addi $a0, $a0, 1 	#increment the string pointer
-		addi $t0, $t0, 1 	#increment the count
-		j loop 			#return to the top of the loop
+      		li 	$t0, 0 		#initialize the count to zero
+		lengthLoop:
+		lb 	$t1, 0($a0) 		#load the next character into t1
+		beqz 	$t1, exit 		#check for the null character
+		addi 	$a0, $a0, 1 	#increment the string pointer
+		addi 	$t0, $t0, 1 	#increment the count
+		j 	lengthLoop 			#return to the top of the loop
 		exit:
 		move	$v1, $t0
-		jr $ra
+		jr 	$ra
                 
                 
