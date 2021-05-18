@@ -24,12 +24,10 @@
         
         #Global variables
         selectedWord: .space 20
-        correctWord: .space 20
+        hiddenWord: .space 20
         wordsGuessed: .space 20
         tempString: .space 20
-        true: .word 1
-        false: .word 0
-        correctInput: .word
+        correctInput: .word 1
         userInput: .space 1
         lives: .word 6
         
@@ -47,11 +45,11 @@
         
         hangmanDrawing_6Lives: .asciiz "\n |-----|\n |     |\n       |\n       |\n       |\n       |\n       |\n       |\n ---------\n"
         hangmanDrawing_5Lives: .asciiz "\n |-----|\n |     |\n O     |\n       |\n       |\n       |\n       |\n       |\n ---------\n"
-        hangmanDrawing_4Lives: .asciiz "\n |-----|\n |     |\n       |\n |     |\n |     |\n       |\n       |\n       |\n ---------\n"
-        hangmanDrawing_3Lives: .asciiz "\n |-----|\n |     |\n       |\n \\|   |\n |     |\n       |\n       |\n       |\n ---------\n"
-        hangmanDrawing_2Lives: .asciiz "\n |-----|\n |     |\n       |\n \\|/  |\n |     |\n       |\n       |\n       |\n ---------\n"
-        hangmanDrawing_1Lives: .asciiz "\n |-----|\n |     |\n       |\n \\|/  |\n |     |\n/      |\n       |\n       |\n ---------\n"
-        hangmanDrawing_0Lives: .asciiz "\n |-----|\n |     |\n       |\n       |\n       |\n/\\    |\n       |\n       |\n ---------\n"
+        hangmanDrawing_4Lives: .asciiz "\n |-----|\n |     |\n O     |\n |     |\n |     |\n       |\n       |\n       |\n ---------\n"
+        hangmanDrawing_3Lives: .asciiz "\n |-----|\n |     |\n O     |\n\\|     |\n |     |\n       |\n       |\n       |\n ---------\n"
+        hangmanDrawing_2Lives: .asciiz "\n |-----|\n |     |\n O     |\n\\|/    |\n |     |\n       |\n       |\n       |\n ---------\n"
+        hangmanDrawing_1Lives: .asciiz "\n |-----|\n |     |\n O     |\n\\|/    |\n |     |\n/      |\n       |\n       |\n ---------\n"
+        hangmanDrawing_0Lives: .asciiz "\n |-----|\n |     |\n O     |\n\\|/    |\n |     |\n/ \\    |\n       |\n       |\n ---------\n"
         
 .text
 
@@ -70,6 +68,7 @@
 		addi	$sp, $sp, -4
 		sw	$ra, 0($sp)
 		#Generate random number 0 - 19
+		lw	$t7, lives	# Number of lives = 6
 		li	$v0, 42
 		la	$a1, 20
 		syscall
@@ -90,9 +89,9 @@
               	li	$v0, 1
         	move	$a0, $s2
         	syscall
-        	#Append underscores to correctWord depending on the number of letters in selectedWord
+        	#Append underscores to hiddenWord depending on the number of letters in selectedWord
         	li	$t0, 0			#For loop counter set to 0
-        	la	$t1, correctWord
+        	la	$t1, hiddenWord
         	la	$t2, underscore
         	appendUnderScoreLoop:
         	addi	$t0, $t0, 1		#Incerease counter by 1
@@ -101,26 +100,152 @@
         	addi	$t1, $t1, 1		#Go to next memory location in correctWord
         	blt	$t0, $s2, appendUnderScoreLoop	#Keep looping until counter matches the length of selectedWord
         	
-        	#Print correctWord to check the number of underscores
+        	#Print hiddenWord to check the number of underscores
         	li	$v0, 4
-        	la	$a0, correctWord
+        	la	$a0, hiddenWord
         	syscall
         	
+        	#Print newLine
+        	li	$v0, 4
+        	la	$a0, newLine
+        	syscall
+        	
+        	#Game Loop
+        	gameLoop:
+        	#Set tempString to correctWord
+        	la	$t0, tempString
+        	la	$t1, hiddenWord
+        	assignString:
+        	lb	$t2, 0($t1)
+        	beqz	$t2, continue1
+        	sb	$t2, 0($t0)
+        	addi	$t1, $t1, 1
+        	addi	$t0, $t0, 1
+        	j	assignString
+        	continue1:
+        	#Lose condition
+        	beqz	$t7, youLose
+        	#Win condition 
+       		la	$t0, selectedWord
+       		la	$t1, hiddenWord
+       		compareString:
+       		lb      $t2,($t0)                   #Get next char from selectedWord
+    		lb      $t3,($t1)                   #Get next char from hiddenWord
+    		bne     $t2,$t3,continue2           #If different continue game
+    		beq     $t2,$zero,youWin            #If last char is null then strings are equal
+    		addi    $s2,$s2,1                   # point to next char
+    		addi    $s3,$s3,1                   # point to next char
+    		j       compareString
+    		continue2:
+    		#Print game messages
+    		#Print wordMessage
+    		li	$v0, 4
+    		la	$a0, wordMessage
+    		syscall
+    		#Print hiddenWord
+    		li	$v0, 4
+    		la	$a0, hiddenWord
+    		syscall
+    		#Print newLine
+    		li	$v0, 4
+    		la	$a0, newLine
+    		syscall
+    		#Print missedMessage
+    		li	$v0, 4
+    		la	$a0, missedMessage
+    		syscall
+    		#Print wordsGuessed
+    		li	$v0, 4
+    		la	$a0, wordsGuessed
+    		move	$a1, $t7	# hangmanDrawings(lives)
+    		jal	hangmanDrawings
+    		askUserGuess:
+    		lw	$t6, correctInput #Flag
+    		#Print userInputPrompt
+    		li	$v0, 4
+    		la	$a0, userInputPrompt
+    		syscall
+    		#Read char from user
+    		li	$v0, 12
+    		syscall
+    		move	$t5, $v0 	#Save input in t5
+    		
+    		youLose:
+    		move	$a1, $t7
+    		jal hangmanDrawings
+    		#Print youLostMessage
+    		li	$v0, 4
+    		la	$a0, youLostMessage
+    		syscall
+        	#Return to main
+        	lw	$ra, 0($sp)
+        	addi	$sp, $sp, 4
+        	jr	$ra
+        	youWin:
+    		move	$a1, $t7
+    		jal hangmanDrawings
+    		#Print youWinMessage
+    		li	$v0, 4
+    		la	$a0, youWinMessage
+    		syscall
         	#Return to main
         	lw	$ra, 0($sp)
         	addi	$sp, $sp, 4
         	jr	$ra
         
-        							
-        								
+        #Prints type of hangman according to the number of lives left							
+        hangmanDrawings:
+        beq	$a1, 6, sixLives
+        beq	$a1, 5, fiveLives
+        beq	$a1, 4, fourLives
+        beq	$a1, 3, threeLives
+        beq	$a1, 2, twoLives
+        beq	$a1, 1, oneLive
+        beqz	$a1, zeroLives
+        sixLives:
+        li	$v0, 4
+        la	$a1, hangmanDrawing_6Lives
+        syscall
+        jr	$ra
+        fiveLives:
+        li	$v0, 4
+        la	$a1, hangmanDrawing_5Lives
+        syscall
+        jr	$ra
+        fourLives:
+        li	$v0, 4
+        la	$a1, hangmanDrawing_4Lives
+        syscall
+        jr	$ra
+        threeLives:
+        li	$v0, 4
+        la	$a1, hangmanDrawing_3Lives
+        syscall
+        jr	$ra
+        twoLives:
+        li	$v0, 4
+        la	$a1, hangmanDrawing_2Lives
+        syscall
+        jr	$ra
+        oneLive:
+        li	$v0, 4
+        la	$a1, hangmanDrawing_1Lives
+        syscall
+        jr	$ra
+        zeroLives:
+        li	$v0, 4
+        la	$a1, hangmanDrawing_0Lives
+        syscall
+        jr	$ra														
+        																								    																																								
         findWordLength:
-      		li 	$t0, 0 		#initialize the count to zero
+      		li 	$t0, 0 		#initialize the count to 0
 		lengthLoop:
-		lb 	$t1, 0($a0) 		#load the next character into t1
-		beqz 	$t1, exit 		#check for the null character
-		addi 	$a0, $a0, 1 	#increment the string pointer
-		addi 	$t0, $t0, 1 	#increment the count
-		j 	lengthLoop 			#return to the top of the loop
+		lb 	$t1, 0($a0) 	#Load the next character into t1
+		beqz 	$t1, exit 	#Exit if  null character
+		addi 	$a0, $a0, 1 	#Increment the string pointer
+		addi 	$t0, $t0, 1 	#Increment the count
+		j 	lengthLoop 	#Loop
 		exit:
 		move	$v1, $t0
 		jr 	$ra
