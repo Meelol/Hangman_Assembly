@@ -27,7 +27,6 @@
         hiddenWord: .space 20
         wordsGuessed: .space 20
         tempString: .space 20
-        correctInput: .word 1
         userInput: .space 1
         lives: .word 6
         
@@ -39,7 +38,7 @@
         underscore: .asciiz "_"
         wordMessage: .asciiz "\nWord: "
         missedMessage: .asciiz "Missed: "
-        invalidInputMessage: .asciiz "Invalid input\n"
+        invalidInputMessage: .asciiz "\nInvalid input\n"
         blankSpace: .asciiz " "
         newLine: .asciiz "\n"
         
@@ -161,7 +160,6 @@
     		move	$a1, $t9	# hangmanDrawings(lives)
     		jal	hangmanDrawings
     		askUserGuess:
-    		lw	$t8, correctInput #Flag
     		#Print userInputPrompt
     		li	$v0, 4
     		la	$a0, userInputPrompt
@@ -169,13 +167,25 @@
     		#Read char from user
     		li	$v0, 12
     		syscall
-    		sb	$v0, userInput 	#Save input in userInput
     		##### NEED TO VERIFY IF INPUT IS A CHAR AND MAKE IT LOWERCASE IF UPPERCASE
-    		
-    		
-    		
+    		blt	$v0, 65, invalidInput
+    		bgt	$v0, 90, verifyChar
+    		addi	$v0, $v0, 32
+    		sb	$v0, userInput 	#Save input in userInput
+    		j 	continue3
+    		verifyChar:
+    		blt	$v0, 97, invalidInput
+    		bgt	$v0, 122, invalidInput
+    		sb	$v0, userInput 	#Save input in userInput
+    		j	continue3
+    		invalidInput:
+    		#Print invalidInputMessage
+    		li	$v0, 4
+    		la	$a0, invalidInputMessage
+    		syscall
+    		j	askUserGuess
+    		continue3:
     		#######
-    		beq	$t8, 0, askUserGuess
     		#Update hiddenWord with userInput
     		lb	$t1, userInput	#Load char from userInput
     		la	$t2, hiddenWord
@@ -183,7 +193,7 @@
     		loopUpdateHiddenWord:
     		lb	$t5, 0($t2)	#Load char from hiddenWord
     		lb	$t6, 0($t3)	#Load char from selectedWord
-    		beqz	$t6, continue3
+    		beqz	$t6, continue4
     		bne	$t1, $t6, nextChar
     		sb	$t1, 0($t2)
     		nextChar:
@@ -191,7 +201,7 @@
     		addi	$t3, $t3, 1
     		j	loopUpdateHiddenWord
     		#Compare tempString with hiddenWord to determine if user lost any lives
-    		continue3:
+    		continue4:
     		la	$t0, tempString
        		la	$t1, hiddenWord
     		compareString2:
