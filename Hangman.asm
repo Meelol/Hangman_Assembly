@@ -1,3 +1,8 @@
+#Authors: Matthew Contreras, Steven Lam, Roy Amador, Edgar Rodriguez
+#Class: CS2640
+#Date: 5/18/2021
+#Description: Hangman Game. You have 6 opportunities to guess the letters of the hidden word. Each wrong guess will complete one part of the Hangman. 
+#	      If the Hangman's full body appears you lose. Guess all the letters in the hidden word and you win.  
 .data
 	#List of words
 	WORD1: .asciiz "astronomy"
