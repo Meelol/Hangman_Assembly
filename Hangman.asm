@@ -37,7 +37,7 @@
         youWinMessage: .asciiz "You guessed right! You Win!\n"
         userInputPrompt: .asciiz "Enter next character (A-Z), or 0 (zero) to exit: "
         underscore: .asciiz "_"
-        wordMessage: .asciiz "Word: "
+        wordMessage: .asciiz "\nWord: "
         missedMessage: .asciiz "Missed: "
         invalidInputMessage: .asciiz "Invalid input\n"
         blankSpace: .asciiz " "
@@ -57,6 +57,7 @@
 		#Print welcome message
 		li	$v0, 4
 		la	$a0, welcomeMessage
+		lw	$t9, lives	# Number of lives = 6
 		syscall
 		#Start game
 		jal startGame
@@ -68,7 +69,6 @@
 		addi	$sp, $sp, -4
 		sw	$ra, 0($sp)
 		#Generate random number 0 - 19
-		lw	$t7, lives	# Number of lives = 6
 		li	$v0, 42
 		la	$a1, 20
 		syscall
@@ -124,17 +124,17 @@
         	j	assignString
         	continue1:
         	#Lose condition
-        	beqz	$t7, youLose
+        	beqz	$t9, youLose
         	#Win condition 
-       		la	$t0, selectedWord
+       		lw	$t0, selectedWord
        		la	$t1, hiddenWord
        		compareString:
-       		lb      $t2,($t0)                   #Get next char from selectedWord
-    		lb      $t3,($t1)                   #Get next char from hiddenWord
+       		lb      $t2, 0($t0)                 #Get next char from selectedWord
+    		lb      $t3, 0($t1)                 #Get next char from hiddenWord
     		bne     $t2,$t3,continue2           #If different continue game
     		beq     $t2,$zero,youWin            #If last char is null then strings are equal
-    		addi    $s2,$s2,1                   # point to next char
-    		addi    $s3,$s3,1                   # point to next char
+    		addi    $t0,$t0,1                   # point to next char
+    		addi    $t1,$t1,1                   # point to next char
     		j       compareString
     		continue2:
     		#Print game messages
@@ -157,10 +157,11 @@
     		#Print wordsGuessed
     		li	$v0, 4
     		la	$a0, wordsGuessed
-    		move	$a1, $t7	# hangmanDrawings(lives)
+    		syscall
+    		move	$a1, $t9	# hangmanDrawings(lives)
     		jal	hangmanDrawings
     		askUserGuess:
-    		lw	$t6, correctInput #Flag
+    		lw	$t8, correctInput #Flag
     		#Print userInputPrompt
     		li	$v0, 4
     		la	$a0, userInputPrompt
@@ -168,10 +169,54 @@
     		#Read char from user
     		li	$v0, 12
     		syscall
-    		move	$t5, $v0 	#Save input in t5
+    		sb	$v0, userInput 	#Save input in userInput
+    		##### NEED TO VERIFY IF INPUT IS A CHAR AND MAKE IT LOWERCASE IF UPPERCASE
     		
+    		
+    		
+    		#######
+    		beq	$t8, 0, askUserGuess
+    		#Update hiddenWord with userInput
+    		lb	$t1, userInput	#Load char from userInput
+    		la	$t2, hiddenWord
+    		lw	$t3, selectedWord
+    		loopUpdateHiddenWord:
+    		lb	$t5, 0($t2)	#Load char from hiddenWord
+    		lb	$t6, 0($t3)	#Load char from selectedWord
+    		beqz	$t6, continue3
+    		bne	$t1, $t6, nextChar
+    		sb	$t1, 0($t2)
+    		nextChar:
+    		addi	$t2, $t2, 1
+    		addi	$t3, $t3, 1
+    		j	loopUpdateHiddenWord
+    		#Compare tempString with hiddenWord to determine if user lost any lives
+    		continue3:
+    		la	$t0, tempString
+       		la	$t1, hiddenWord
+    		compareString2:
+    		lb      $t2, 0($t0)                   #Get next char from tempString
+    		lb      $t3, 0($t1)                   #Get next char from hiddenWord
+    		bne     $t2,$t3, gameLoop           #If different continue game
+    		beq     $t2,$zero, loseLife         #If last char is null then strings are equal
+    		addi    $t0,$t0,1                   # point to next char
+    		addi    $t1,$t1,1                   # point to next char
+    		j       compareString2
+    		loseLife:
+    		subi	$t9, $t9, 1
+    		#Append userInput to wordsGuessed if user guessed wrong
+        	la	$t1, wordsGuessed
+        	lb	$t2, userInput
+        	appendUserInput:
+        	lb	$t4, 0($t1)		#Load char from wordsGuessed
+        	bnez	$t4, nextChar2
+        	sb	$t2, 0($t1)		#Add userInput to wordsGuessed
+        	j	gameLoop
+        	nextChar2:
+        	addi	$t1, $t1, 1		#Go to next char in wordsGuessed
+        	j	appendUserInput
     		youLose:
-    		move	$a1, $t7
+    		move	$a1, $t9
     		jal hangmanDrawings
     		#Print youLostMessage
     		li	$v0, 4
@@ -182,7 +227,7 @@
         	addi	$sp, $sp, 4
         	jr	$ra
         	youWin:
-    		move	$a1, $t7
+    		move	$a1, $t9
     		jal hangmanDrawings
     		#Print youWinMessage
     		li	$v0, 4
@@ -204,37 +249,37 @@
         beqz	$a1, zeroLives
         sixLives:
         li	$v0, 4
-        la	$a1, hangmanDrawing_6Lives
+        la	$a0, hangmanDrawing_6Lives
         syscall
         jr	$ra
         fiveLives:
         li	$v0, 4
-        la	$a1, hangmanDrawing_5Lives
+        la	$a0, hangmanDrawing_5Lives
         syscall
         jr	$ra
         fourLives:
         li	$v0, 4
-        la	$a1, hangmanDrawing_4Lives
+        la	$a0, hangmanDrawing_4Lives
         syscall
         jr	$ra
         threeLives:
         li	$v0, 4
-        la	$a1, hangmanDrawing_3Lives
+        la	$a0, hangmanDrawing_3Lives
         syscall
         jr	$ra
         twoLives:
         li	$v0, 4
-        la	$a1, hangmanDrawing_2Lives
+        la	$a0, hangmanDrawing_2Lives
         syscall
         jr	$ra
         oneLive:
         li	$v0, 4
-        la	$a1, hangmanDrawing_1Lives
+        la	$a0, hangmanDrawing_1Lives
         syscall
         jr	$ra
         zeroLives:
         li	$v0, 4
-        la	$a1, hangmanDrawing_0Lives
+        la	$a0, hangmanDrawing_0Lives
         syscall
         jr	$ra														
         																								    																																								
