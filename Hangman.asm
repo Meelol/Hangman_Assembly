@@ -66,4 +66,45 @@
 		syscall
 		
 	startGame:
-        
+		addi	$sp, $sp, -4
+		sw	$s0, 0($sp)
+		#Generate random number 0 - 19
+		li	$v0, 42
+		la	$a1, 20
+		syscall
+        	move	$s1, $a0		#$s1 = Random number
+        	mul	$t0, $s1, 4		#Get correct wordList member
+        	lw	$s2, wordList($t0)	#$s2 = wordList[$s0]	
+        	sw	$s2, selectedWord 	#selectedWord = $s2
+        	#Print selectedWord to check
+        	li    	$v0,  4
+        	lw	$a0, selectedWord
+        	syscall
+        	
+        	#Find length of word
+        	lw	$a0, selectedWord
+        	jal	findWordLength
+        	move	$t1, $v0
+        	
+        	#Print length
+              	li	$v0, 1
+        	move	$a0, $t1
+        	syscall
+        	 
+        	#Return to main
+        	lw	$s0, 0($sp)
+        	addi	$sp, $sp, 4
+        	jr	$ra
+        	
+        findWordLength:
+      		li $t0, 0 		#initialize the count to zero
+		loop:
+		lb $t1, 0($a0) 		#load the next character into t1
+		beqz $t1, exit 		#check for the null character
+		addi $a0, $a0, 1 	#increment the string pointer
+		addi $t0, $t0, 1 	#increment the count
+		j loop 			#return to the top of the loop
+		exit:
+		jr $ra
+                
+                
